@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1">
+
+<title>StarTone Admin</title>
+
+<link rel="icon" href="../images/StarTone Circle.png">
+
+<meta name="robots"
+content="noindex,nofollow">
+
+<link rel="stylesheet"
+href="style.css">
+
+</head>
+
+<body>
+
+<div class="topbar">
+
+    <h1>StarTone Admin Dashboard</h1>
+
+    <button id="logoutBtn">
+        Logout
+    </button>
+
+</div>
+
+<div class="dashboard">
+
+    <div class="card">
+        <h3>Total Order</h3>
+        <h2 id="totalOrders">0</h2>
+    </div>
+
+    <div class="card">
+        <h3>Waiting</h3>
+        <h2 id="waitingOrders">0</h2>
+    </div>
+
+    <div class="card">
+        <h3>Verified</h3>
+        <h2 id="verifiedOrders">0</h2>
+    </div>
+
+    <div class="card">
+        <h3>Revenue</h3>
+        <h2 id="totalRevenue">Rp0</h2>
+    </div>
+
+</div>
+
+<div class="toolbar">
+
+    <input
+        type="text"
+        id="searchInput"
+        placeholder="🔍 Cari customer atau produk...">
+
+    <select id="statusFilter">
+
+        <option value="all">Semua Status</option>
+
+        <option value="waiting">
+            Waiting
+        </option>
+
+        <option value="waiting_verification">
+            Waiting Verification
+        </option>
+
+        <option value="verified">
+            Verified
+        </option>
+
+        <option value="rejected">
+            Rejected
+        </option>
+
+    </select>
+
+</div>
+
+<table>
+
+<thead>
+
+<tr>
+
+<th>Invoice</th>
+
+<th>Customer</th>
+
+<th>Produk</th>
+
+<th>Harga</th>
+
+<th>Bukti Pembayaran</th>
+
+<th>Status</th>
+
+<th>Aksi</th>
+
+</tr>
+
+</thead>
+
+<tbody id="orders">
+
+</tbody>
+
+</table>
+
+<script type="module" src="admin.js"></script>
+
+</body>
+
+</html>
