@@ -1,6 +1,21 @@
-console.log("ADMIN JS BERJALAN");
+// 1. Gabungkan import auth dan db dari file firebase.js yang berada di folder yang sama
+import { auth, db } from "./firebase.js"; 
 
-import { auth } from "./firebase.js";
+// 2. Import modul Auth dari CDN
+import {
+    onAuthStateChanged,
+    signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+// 3. Import modul Firestore dari CDN
+import {
+    collection,
+    onSnapshot,
+    doc,
+    updateDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+console.log("ADMIN JS BERJALAN");
 
 import {
     onAuthStateChanged,
