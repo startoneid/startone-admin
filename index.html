@@ -56,38 +56,6 @@ href="style.css">
 
 </div>
 
-<div class="card" style="margin-bottom: 30px; background: #35363A; padding: 25px; border-radius: 15px; border: 1px solid #FFD166;">
-    <h2 style="color: #FFD166; margin-bottom: 15px;">➕ Tambah Produk Baru</h2>
-    
-    <form id="addProductForm" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px;">
-        <input type="text" id="newProdName" placeholder="Nama Produk (cth: Cinematic Preset)" required style="padding: 12px; border-radius: 8px; border: none; background: #222; color: white;">
-        <input type="number" id="newProdPrice" placeholder="Harga dalam Rupiah (cth: 50000)" required style="padding: 12px; border-radius: 8px; border: none; background: #222; color: white;">
-        <input type="text" id="newProdImage" placeholder="URL Link Gambar / Cover Produk" required style="padding: 12px; border-radius: 8px; border: none; background: #222; color: white;">
-        <input type="text" id="newProdDrive" placeholder="Link Google Drive (Untuk Download File)" required style="padding: 12px; border-radius: 8px; border: none; background: #222; color: white;">
-        <textarea id="newProdDesc" placeholder="Deskripsi singkat produk..." style="grid-column: span 2; padding: 12px; border-radius: 8px; border: none; background: #222; color: white; height: 80px; font-family: inherit;"></textarea>
-        
-        <button type="submit" style="grid-column: span 2; background: #FFD166; color: black; font-weight: bold; cursor: pointer; padding: 12px;">🚀 Simpan & Terbitkan Produk</button>
-    </form>
-
-    <hr style="border: 0.5px solid #555; margin-bottom: 20px;">
-
-    <h3 style="color: white; margin-bottom: 10px;">📦 Daftar Produk Aktif</h3>
-    <div style="overflow-x: auto;">
-        <table style="width: 100%; margin-top: 10px;">
-            <thead>
-                <tr>
-                    <th style="background: #222; color: #FFD166;">Cover</th>
-                    <th style="background: #222; color: #FFD166;">Nama Produk</th>
-                    <th style="background: #222; color: #FFD166;">Harga</th>
-                    <th style="background: #222; color: #FFD166;">Aksi</th>
-                </tr>
-            </thead>
-            <tbody id="activeProductsList">
-                </tbody>
-        </table>
-    </div>
-</div>
-
 <div class="toolbar">
 
     <input
