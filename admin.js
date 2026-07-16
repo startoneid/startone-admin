@@ -111,7 +111,7 @@ window.verifyOrder = async (id) => {
 
     switch (order.product) {
         case "Summer Tone":
-            downloadURL = "downloads/japan-collection.zip";
+            downloadURL = "https://drive.google.com/uc?export=download&id=1sFhbUASwvK7Qvn75zmkxohk2jDgWJFr7";
             break;
         case "Korean Collection":
             downloadURL = "downloads/korean-collection.zip";
