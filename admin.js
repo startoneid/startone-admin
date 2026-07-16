@@ -1,6 +1,6 @@
 console.log("ADMIN JS BERJALAN");
 
-import { auth } from "../Firebase/firebase.js";
+import { auth } from ".firebase.js";
 
 import {
     onAuthStateChanged,
