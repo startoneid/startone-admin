@@ -7,13 +7,11 @@ import {
     signOut
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-// 1. TAMBAHKAN 'addDoc' di dalam kurung kurawal import firestore
 import {
     collection,
     onSnapshot,
     doc,
-    updateDoc,
-    addDoc // <-- Tambahkan ini
+    updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 console.log("ADMIN JS BERJALAN");
@@ -187,41 +185,6 @@ if (logoutBtn) {
         } catch (error) {
             alert("Logout gagal!");
             console.error(error);
-        }
-    });
-}
-
-// =======================================================
-// KODE TAMBAHAN: LOGIKA MENAMBAH PRODUK BARU KE FIRESTORE
-// =======================================================
-const addProductForm = document.getElementById("addProductForm");
-
-if (addProductForm) {
-    addProductForm.addEventListener("submit", async (e) => {
-        e.preventDefault(); // Mencegah halaman reload otomatis saat submit
-
-        // Ambil data dari input form
-        const name = document.getElementById("newProdName").value.trim();
-        const price = Number(document.getElementById("newProdPrice").value.trim());
-        const image = document.getElementById("newProdImage").value.trim();
-        const downloadURL = document.getElementById("newProdDownload").value.trim();
-
-        try {
-            // Masukkan data baru ke dalam koleksi bernama "products" di Firestore
-            await addDoc(collection(db, "products"), {
-                name: name,
-                price: price,
-                image: image, // Menyimpan string path internal seperti 'images/preset-1.jpg'
-                downloadURL: downloadURL,
-                createdAt: new Date()
-            });
-
-            alert("🎉 Produk baru berhasil ditambahkan!");
-            addProductForm.reset(); // Bersihkan isi form setelah berhasil disimpan
-            
-        } catch (error) {
-            console.error("Gagal menambahkan produk:", error);
-            alert("❌ Gagal menyimpan produk. Periksa konsol browser.");
         }
     });
 }
