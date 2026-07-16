@@ -1,6 +1,6 @@
 console.log("ADMIN JS BERJALAN");
 
-import { auth } from "../Firebase/firebase.js";
+import { auth } from "../js/firebase.js";
 
 import {
     onAuthStateChanged,
@@ -35,7 +35,7 @@ onAuthStateChanged(auth, (user) => {
 
 });
 
-import { db } from "../Firebase/firebase.js";
+import { db } from "../js/firebase.js";
 
 import {
     collection,
@@ -207,8 +207,8 @@ let downloadURL = "";
 
 switch (order.product) {
 
-    case "Japan Collection":
-        downloadURL = "downloads/japan-collection.zip";
+    case "Summer Tone":
+        downloadURL = "https://drive.google.com/uc?export=download&id=1sFhbUASwvK7Qvn75zmkxohk2jDgWJFr7";
         break;
 
     case "Korean Collection":
