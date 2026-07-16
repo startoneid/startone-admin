@@ -111,7 +111,7 @@ window.verifyOrder = async (id) => {
     if (order.product === "Summer Tone") {
         defaultURL = "https://drive.google.com/file/d/1sFhbUASwvK7Qvn75zmkxohk2jDgWJFr7/view?usp=sharing";
     } else if (order.product === "Korean Collection") {
-        defaultURL = "downloads/korean-collection.zip";
+        defaultURL = "https://drive.google.com/file/d/1sFhbUASwvK7Qvn75zmkxohk2jDgWJFr7/view?usp=sharing";
     } else if (order.product === "Cinematic Collection") {
         defaultURL = "downloads/cinematic-collection.zip";
     }
