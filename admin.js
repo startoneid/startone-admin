@@ -35,7 +35,7 @@ onAuthStateChanged(auth, (user) => {
 
 });
 
-import { db } from "../Firebase/firebase.js";
+import { db } from "../js/firebase.js";
 
 import {
     collection,
@@ -207,7 +207,7 @@ let downloadURL = "";
 
 switch (order.product) {
 
-    case "Japan Collection":
+    case "Summer Tone":
         downloadURL = "downloads/japan-collection.zip";
         break;
 
