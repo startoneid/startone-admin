@@ -163,7 +163,7 @@ button:hover{
         gap: 10px;
     }
     .toolbar input { padding: 10px; font-size: 13px; }
-    .toolbar select { padding: 10px; font-between: 13px; max-width: 120px; }
+    .toolbar select { padding: 10px; font-size: 13px; max-width: 120px; }
 
     /* Pengaturan Tabel Responsif agar tidak merusak layout */
     table {

@@ -1,7 +1,5 @@
-// 1. Gabungkan import auth dan db dari file firebase.js di folder yang sama
 import { auth, db } from "./firebase.js"; 
 
-// 2. Import modul Auth & Firestore dari CDN
 import {
     onAuthStateChanged,
     signOut
@@ -11,21 +9,22 @@ import {
     collection,
     onSnapshot,
     doc,
-    updateDoc
+    updateDoc,
+    addDoc,
+    deleteDoc,
+    getDocs,
+    query,
+    where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 console.log("ADMIN JS BERJALAN");
 
-// 3. Validasi Login Admin
+// 1. Validasi Login Admin
 onAuthStateChanged(auth, (user) => {
-    console.log("USER:", user);
     if (!user) {
-        console.log("BELUM LOGIN");
         window.location.href = "login.html";
         return;
     }
-
-    console.log("SUDAH LOGIN:", user.email);
     if (user.email !== "startone.id@gmail.com") {
         alert("Akses ditolak.");
         window.location.href = "login.html";
@@ -33,7 +32,86 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// 4. Inisialisasi DOM Elemen
+// ==========================================
+// 🚀 FITUR A: TAMBAH PRODUK BARU KE FIRESTORE
+// ==========================================
+const addProductForm = document.getElementById("addProductForm");
+if (addProductForm) {
+    addProductForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const name = document.getElementById("newProdName").value.trim();
+        const price = Number(document.getElementById("newProdPrice").value);
+        const imageUrl = document.getElementById("newProdImage").value.trim();
+        const driveUrl = document.getElementById("newProdDrive").value.trim();
+        const desc = document.getElementById("newProdDesc").value.trim();
+
+        try {
+            // Menyimpan ke koleksi "products" di Firestore
+            await addDoc(collection(db, "products"), {
+                name: name,
+                price: price,
+                image: imageUrl,
+                downloadURL: driveUrl,
+                description: desc
+            });
+
+            alert("Produk baru berhasil ditambahkan dan terbit secara Realtime!");
+            addProductForm.reset();
+        } catch (error) {
+            console.error("Error menambahkan produk:", error);
+            alert("Gagal menambahkan produk: " + error.message);
+        }
+    });
+}
+
+// ==========================================
+// 📦 FITUR B: TAMPILKAN & HAPUS DAFTAR PRODUK AKTIF
+// ==========================================
+const activeProductsList = document.getElementById("activeProductsList");
+
+onSnapshot(collection(db, "products"), (snapshot) => {
+    if (!activeProductsList) return;
+    
+    activeProductsList.innerHTML = "";
+    
+    if (snapshot.empty) {
+        activeProductsList.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#aaa;">Belum ada produk jualan. Silakan tambah di atas!</td></tr>`;
+        return;
+    }
+
+    snapshot.forEach((documentSnapshot) => {
+        const product = documentSnapshot.data();
+        const prodId = documentSnapshot.id;
+
+        activeProductsList.innerHTML += `
+            <tr>
+                <td><img src="${product.image}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;"></td>
+                <td style="font-weight: bold; color: white;">${product.name}</td>
+                <td style="color: #FFD166;">Rp ${Number(product.price).toLocaleString("id-ID")}</td>
+                <td>
+                    <button style="background: #dc3545; color: white; padding: 6px 12px; font-size: 12px;" onclick="deleteProduct('${prodId}')">🗑 Hapus</button>
+                </td>
+            </tr>
+        `;
+    });
+});
+
+// Fungsi Global untuk menghapus produk dari database
+window.deleteProduct = async (id) => {
+    if (!confirm("Apakah Anda yakin ingin menghapus produk jualan ini dari toko?")) return;
+    try {
+        await deleteDoc(doc(db, "products", id));
+        alert("Produk berhasil dihapus!");
+    } catch (error) {
+        console.error("Gagal menghapus produk:", error);
+        alert("Gagal menghapus produk.");
+    }
+};
+
+// ==========================================
+// 📝 FITUR C: KELOLA ORDERAN MASUK & VERIFIKASI OTOMATIS
+// ==========================================
 const tbody = document.getElementById("orders");
 const searchInput = document.getElementById("searchInput");
 const statusFilter = document.getElementById("statusFilter");
@@ -44,7 +122,6 @@ const totalRevenue = document.getElementById("totalRevenue");
 
 let allOrders = [];
 
-// 5. Realtime Data dari Firestore
 onSnapshot(collection(db, "orders"), (snapshot) => {
     let total = 0;
     let waiting = 0;
@@ -102,36 +179,42 @@ onSnapshot(collection(db, "orders"), (snapshot) => {
     });
 });
 
-// 6. Global Functions untuk Button Klik (window object)
+// Verifikasi Order Otomatis mengambil link dari database produk
 window.verifyOrder = async (id) => {
     const order = allOrders.find(item => item.id === id);
     
-    // Tentukan saran link default berdasarkan produk lama kamu agar tidak repot mengetik ulang
-    let defaultURL = "";
-    if (order.product === "Summer Tone") {
-        defaultURL = "https://drive.google.com/file/d/1sFhbUASwvK7Qvn75zmkxohk2jDgWJFr7/view?usp=sharing";
-    } else if (order.product === "Korean Collection") {
-        defaultURL = "https://drive.google.com/file/d/1sFhbUASwvK7Qvn75zmkxohk2jDgWJFr7/view?usp=sharing";
-    } else if (order.product === "Cinematic Collection") {
-        defaultURL = "downloads/cinematic-collection.zip";
-    }
+    let downloadURL = "";
 
-    // Munculkan dialog box prompt pengisian link download (Bisa kamu paste link GDrive produk baru di sini)
-    let downloadURL = prompt(
-        `Verifikasi pesanan: ${order.customerName}\n\nMasukkan link download untuk produk [ ${order.product} ] :`, 
-        defaultURL
-    );
-    
-    // Jika admin menekan tombol "Batal" atau "Cancel"
-    if (downloadURL === null) return; 
-
-    // Simpan status verifikasi beserta link download-nya ke Firestore database
     try {
+        // 1. Cari data produk pembeli di database "products" secara otomatis
+        const q = query(collection(db, "products"), where("name", "==", order.product));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            // Jika ditemukan produk yang cocok, ambil link downloadnya secara otomatis!
+            const prodData = querySnapshot.docs[0].data();
+            downloadURL = prodData.downloadURL;
+        } else {
+            // Fallback cadangan untuk produk lama kamu yang tidak ada di database baru
+            if (order.product === "Summer Tone") downloadURL = "downloads/japan-collection.zip";
+            else if (order.product === "Korean Collection") downloadURL = "downloads/korean-collection.zip";
+            else if (order.product === "Cinematic Collection") downloadURL = "downloads/cinematic-collection.zip";
+        }
+
+        // 2. Munculkan prompt untuk mengonfirmasi atau memodifikasi link tersebut
+        let finalLink = prompt(
+            `Verifikasi pesanan ${order.customerName}.\nPastikan link Google Drive download ini sudah benar:`, 
+            downloadURL
+        );
+
+        if (finalLink === null) return; // Jika klik batal
+
         await updateDoc(doc(db, "orders", id), {
             status: "verified",
             downloadReady: true,
-            downloadURL: downloadURL.trim()
+            downloadURL: finalLink.trim()
         });
+        
         alert("Pesanan berhasil diverifikasi!");
     } catch (error) {
         console.error(error);
@@ -154,7 +237,7 @@ window.copyInvoice = async (invoice) => {
     }
 };
 
-// 7. Fitur Filter & Search
+// Fitur Filter & Search
 function filterOrders() {
     const keyword = searchInput.value.toLowerCase();
     const status = statusFilter.value;
@@ -172,10 +255,10 @@ function filterOrders() {
     });
 }
 
-searchInput.addEventListener("input", filterOrders);
-statusFilter.addEventListener("change", filterOrders);
+if(searchInput) searchInput.addEventListener("input", filterOrders);
+if(statusFilter) statusFilter.addEventListener("change", filterOrders);
 
-// 8. Fitur Logout
+// Fitur Logout
 const logoutBtn = document.getElementById("logoutBtn");
 if (logoutBtn) {
     logoutBtn.addEventListener("click", async () => {
