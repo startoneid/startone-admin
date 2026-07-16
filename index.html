@@ -87,6 +87,24 @@ href="style.css">
 
 </div>
 
+<div class="card" style="margin-top: 20px; padding: 20px; background: #35363A; border-radius: 15px;">
+    <h3 style="color: #FFD166; margin-bottom: 15px;">➕ Tambah Produk Preset Baru</h3>
+    <form id="addProductForm" style="display: flex; flex-direction: column; gap: 12px; max-width: 500px;">
+        <input type="text" id="newProdName" placeholder="Nama Preset (Contoh: Summer Tone)" required style="padding: 12px; border-radius: 8px; border: none; background: #222; color: white;">
+        
+        <input type="number" id="newProdPrice" placeholder="Harga (Contoh: 50000)" required style="padding: 12px; border-radius: 8px; border: none; background: #222; color: white;">
+        
+        <input type="text" id="newProdImage" placeholder="Path Gambar Cover (Contoh: images/presets-1.jpg)" required style="padding: 12px; border-radius: 8px; border: none; background: #222; color: white;">
+        
+        <input type="url" id="newProdDownload" placeholder="Link Download Preset (Google Drive/Cloud)" required style="padding: 12px; border-radius: 8px; border: none; background: #222; color: white;">
+        
+        <button type="submit" style="background: #28a745; color: white; padding: 12px; font-size: 15px;">💾 Simpan Produk</button>
+    </form>
+</div>
+
+<div class="toolbar" style="margin-top: 30px;">
+...
+
 <table>
 
 <thead>
