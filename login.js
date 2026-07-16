@@ -1,56 +1,38 @@
-import { auth } from "../Firebase/firebase.js";
-
-console.log("AUTH APP:", auth.app.options);
+// Perbaikan path agar mengambil file dari folder yang sama
+import { auth } from "./firebase.js"; 
 
 import {
-    
-
-signInWithEmailAndPassword
-
+    signInWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-const email=document.getElementById("email");
+console.log("AUTH APP READY");
 
-const password=document.getElementById("password");
+const email = document.getElementById("email");
+const password = document.getElementById("password");
+const loginBtn = document.getElementById("loginBtn");
+const error = document.getElementById("error");
 
-const loginBtn=document.getElementById("loginBtn");
+loginBtn.addEventListener("click", async () => {
+    error.textContent = "";
 
-const error=document.getElementById("error");
+    try {
+        const userCredential = await signInWithEmailAndPassword(
+            auth,
+            email.value,
+            password.value
+        );
 
-loginBtn.addEventListener("click",async()=>{
+        const user = userCredential.user;
 
-error.textContent="";
+        if (user.email !== "startone.id@gmail.com") {
+            error.textContent = "Bukan akun admin.";
+            return;
+        }
 
-try{
+        // Perbaikan redirect langsung mengarah ke halaman dashboard admin kamu
+        window.location.href = "admin.html"; 
 
-const userCredential=
-
-await signInWithEmailAndPassword(
-
-auth,
-
-email.value,
-
-password.value
-
-);
-
-const user=userCredential.user;
-
-if(user.email!=="startone.id@gmail.com"){
-
-error.textContent="Bukan akun admin.";
-
-return;
-
-}
-
-window.location.href="index.html";
-
-}catch(err){
-
-error.textContent=err.message;
-
-}
-
+    } catch (err) {
+        error.textContent = err.message;
+    }
 });
