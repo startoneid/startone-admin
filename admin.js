@@ -208,7 +208,7 @@ let downloadURL = "";
 switch (order.product) {
 
     case "Summer Tone":
-        downloadURL = "https://drive.google.com/uc?export=download&id=1sFhbUASwvK7Qvn75zmkxohk2jDgWJFr7";
+        downloadURL = "downloads/japan-collection.zip";
         break;
 
     case "Korean Collection":
