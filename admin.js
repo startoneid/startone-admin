@@ -104,33 +104,39 @@ onSnapshot(collection(db, "orders"), (snapshot) => {
 
 // 6. Global Functions untuk Button Klik (window object)
 window.verifyOrder = async (id) => {
-    if (!confirm("Yakin ingin memverifikasi pembayaran ini?")) return;
-
     const order = allOrders.find(item => item.id === id);
-    let downloadURL = "";
-
-    switch (order.product) {
-        case "Summer Tone":
-            downloadURL = "https://drive.google.com/uc?export=download&id=1sFhbUASwvK7Qvn75zmkxohk2jDgWJFr7";
-            break;
-        case "Korean Collection":
-            downloadURL = "downloads/korean-collection.zip";
-            break;
-        case "Cinematic Collection":
-            downloadURL = "downloads/cinematic-collection.zip";
-            break;
-        case "Summer Tone":
-            downloadURL = "https://drive.google.com/uc?export=download&id=1sFhbUASwvK7Qvn75zmkxohk2jDgWJFr7";
-            break;
-        default:
-            downloadURL = "";
+    
+    // Tentukan saran link default berdasarkan produk lama kamu agar tidak repot mengetik ulang
+    let defaultURL = "";
+    if (order.product === "Summer Tone") {
+        defaultURL = "https://drive.google.com/file/d/1sFhbUASwvK7Qvn75zmkxohk2jDgWJFr7/view?usp=sharing";
+    } else if (order.product === "Korean Collection") {
+        defaultURL = "downloads/korean-collection.zip";
+    } else if (order.product === "Cinematic Collection") {
+        defaultURL = "downloads/cinematic-collection.zip";
     }
 
-    await updateDoc(doc(db, "orders", id), {
-        status: "verified",
-        downloadReady: true,
-        downloadURL: downloadURL
-    });
+    // Munculkan dialog box prompt pengisian link download (Bisa kamu paste link GDrive produk baru di sini)
+    let downloadURL = prompt(
+        `Verifikasi pesanan: ${order.customerName}\n\nMasukkan link download untuk produk [ ${order.product} ] :`, 
+        defaultURL
+    );
+    
+    // Jika admin menekan tombol "Batal" atau "Cancel"
+    if (downloadURL === null) return; 
+
+    // Simpan status verifikasi beserta link download-nya ke Firestore database
+    try {
+        await updateDoc(doc(db, "orders", id), {
+            status: "verified",
+            downloadReady: true,
+            downloadURL: downloadURL.trim()
+        });
+        alert("Pesanan berhasil diverifikasi!");
+    } catch (error) {
+        console.error(error);
+        alert("Gagal memverifikasi pesanan.");
+    }
 };
 
 window.rejectOrder = async (id) => {
