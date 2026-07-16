@@ -119,6 +119,9 @@ window.verifyOrder = async (id) => {
         case "Cinematic Collection":
             downloadURL = "downloads/cinematic-collection.zip";
             break;
+        case "Summer Tone":
+            downloadURL = "https://drive.google.com/uc?export=download&id=1sFhbUASwvK7Qvn75zmkxohk2jDgWJFr7";
+            break;
         default:
             downloadURL = "";
     }
