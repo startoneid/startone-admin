@@ -56,6 +56,57 @@ href="style.css">
 
 </div>
 
+<div class="section-header">
+    <h2>Kelola Produk (Featured Collections)</h2>
+    <button id="toggleProductForm">+ Tambah Produk</button>
+</div>
+
+<div class="product-form-wrapper" id="productFormWrapper" style="display:none;">
+
+    <form id="productForm">
+
+        <input type="hidden" id="productId">
+
+        <input type="text" id="productName" placeholder="Nama Produk (contoh: Summer Tone)" required>
+
+        <input type="number" id="productPrice" placeholder="Harga dalam angka (contoh: 15000)" required min="0">
+
+        <input type="url" id="productImage" placeholder="Link Gambar / URL Gambar" required>
+
+        <textarea id="productShortDesc" placeholder="Deskripsi singkat (tampil di kartu halaman utama)" required></textarea>
+
+        <textarea id="productDetail" placeholder="Detail lengkap produk (tampil saat produk diklik di halaman utama)" required></textarea>
+
+        <textarea id="productTips" placeholder="Tips penggunaan produk (tampil saat produk diklik di halaman utama)"></textarea>
+
+        <div class="form-actions">
+            <button type="submit" id="productSubmitBtn">Simpan Produk</button>
+            <button type="button" id="productCancelBtn">Batal</button>
+        </div>
+
+    </form>
+
+</div>
+
+<table>
+
+<thead>
+<tr>
+<th>Gambar</th>
+<th>Nama Produk</th>
+<th>Harga</th>
+<th>Aksi</th>
+</tr>
+</thead>
+
+<tbody id="productsTable"></tbody>
+
+</table>
+
+<div class="section-header" style="margin-top:60px;">
+    <h2>Daftar Order Masuk</h2>
+</div>
+
 <div class="toolbar">
 
     <input

@@ -11,7 +11,12 @@ import {
     collection,
     onSnapshot,
     doc,
-    updateDoc
+    updateDoc,
+    addDoc,
+    deleteDoc,
+    query,
+    orderBy,
+    serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 console.log("ADMIN JS BERJALAN");
@@ -188,3 +193,155 @@ if (logoutBtn) {
         }
     });
 }
+
+// ==================================================================
+// 9. KELOLA PRODUK (Featured Collections di Halaman Utama)
+// ==================================================================
+// Setiap perubahan di sini (tambah/edit/hapus) akan otomatis
+// tersinkron ke halaman utama karena keduanya membaca koleksi
+// Firestore "products" yang sama secara realtime.
+// ==================================================================
+
+const productForm = document.getElementById("productForm");
+const productFormWrapper = document.getElementById("productFormWrapper");
+const toggleProductForm = document.getElementById("toggleProductForm");
+const productCancelBtn = document.getElementById("productCancelBtn");
+const productsTable = document.getElementById("productsTable");
+const productIdInput = document.getElementById("productId");
+const productSubmitBtn = document.getElementById("productSubmitBtn");
+
+let allProducts = [];
+let editingProductId = null;
+
+function resetProductForm() {
+    productForm.reset();
+    productIdInput.value = "";
+    editingProductId = null;
+    productSubmitBtn.textContent = "Simpan Produk";
+}
+
+// Tombol "+ Tambah Produk" -> buka/tutup form kosong
+toggleProductForm?.addEventListener("click", () => {
+    const isHidden = productFormWrapper.style.display === "none" || !productFormWrapper.style.display;
+
+    if (isHidden) {
+        resetProductForm();
+        productFormWrapper.style.display = "block";
+    } else {
+        productFormWrapper.style.display = "none";
+    }
+});
+
+// Tombol "Batal" di dalam form
+productCancelBtn?.addEventListener("click", () => {
+    resetProductForm();
+    productFormWrapper.style.display = "none";
+});
+
+// Realtime daftar produk, diurutkan berdasarkan field "order"
+onSnapshot(query(collection(db, "products"), orderBy("order", "asc")), (snapshot) => {
+    allProducts = [];
+    productsTable.innerHTML = "";
+
+    snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        allProducts.push({ id: docSnap.id, ...data });
+
+        productsTable.innerHTML += `
+            <tr>
+                <td>
+                    <img src="${data.image || ""}" alt="${data.name || ""}"
+                        style="width:70px;height:70px;object-fit:cover;border-radius:8px;">
+                </td>
+                <td>${data.name || "-"}</td>
+                <td>Rp ${Number(data.price || 0).toLocaleString("id-ID")}</td>
+                <td>
+                    <button onclick="editProduct('${docSnap.id}')">✎ Edit</button>
+                    <button style="background:#dc3545;color:white;margin-left:8px;"
+                        onclick="deleteProduct('${docSnap.id}')">🗑 Hapus</button>
+                </td>
+            </tr>
+        `;
+    });
+
+    if (allProducts.length === 0) {
+        productsTable.innerHTML = `
+            <tr><td colspan="4" style="text-align:center;color:#999;">
+                Belum ada produk. Klik "+ Tambah Produk" untuk menambahkan.
+            </td></tr>
+        `;
+    }
+}, (error) => {
+    console.error("Gagal memuat produk:", error);
+});
+
+// Submit form -> tambah produk baru ATAU update produk lama
+productForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const payload = {
+        name: document.getElementById("productName").value.trim(),
+        price: Number(document.getElementById("productPrice").value),
+        image: document.getElementById("productImage").value.trim(),
+        shortDesc: document.getElementById("productShortDesc").value.trim(),
+        detail: document.getElementById("productDetail").value.trim(),
+        tips: document.getElementById("productTips").value.trim()
+    };
+
+    try {
+        if (editingProductId) {
+            // Mode edit: perbarui dokumen yang sudah ada
+            await updateDoc(doc(db, "products", editingProductId), payload);
+            alert("Produk berhasil diperbarui!");
+        } else {
+            // Mode tambah: buat dokumen baru
+            // field "order" pakai timestamp supaya produk baru tampil
+            // paling akhir/terbaru secara berurutan
+            await addDoc(collection(db, "products"), {
+                ...payload,
+                order: Date.now(),
+                createdAt: serverTimestamp()
+            });
+            alert("Produk berhasil ditambahkan! Cek halaman utama, jumlah produk sudah bertambah.");
+        }
+
+        resetProductForm();
+        productFormWrapper.style.display = "none";
+
+    } catch (error) {
+        console.error(error);
+        alert("Gagal menyimpan produk: " + error.message);
+    }
+});
+
+// Tombol Edit di tabel
+window.editProduct = (id) => {
+    const product = allProducts.find((p) => p.id === id);
+    if (!product) return;
+
+    editingProductId = id;
+    productIdInput.value = id;
+    document.getElementById("productName").value = product.name || "";
+    document.getElementById("productPrice").value = product.price || "";
+    document.getElementById("productImage").value = product.image || "";
+    document.getElementById("productShortDesc").value = product.shortDesc || "";
+    document.getElementById("productDetail").value = product.detail || "";
+    document.getElementById("productTips").value = product.tips || "";
+
+    productSubmitBtn.textContent = "Update Produk";
+    productFormWrapper.style.display = "block";
+    productFormWrapper.scrollIntoView({ behavior: "smooth", block: "start" });
+};
+
+// Tombol Hapus di tabel
+window.deleteProduct = async (id) => {
+    if (!confirm("Yakin ingin menghapus produk ini? Produk akan langsung hilang dari halaman utama.")) return;
+
+    try {
+        await deleteDoc(doc(db, "products", id));
+        alert("Produk berhasil dihapus.");
+    } catch (error) {
+        console.error(error);
+        alert("Gagal menghapus produk: " + error.message);
+    }
+};
