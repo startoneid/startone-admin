@@ -133,6 +133,33 @@ button:hover{
     justify-content:space-between;
     align-items:center;
     margin-bottom:20px;
+    flex-wrap:wrap;
+    gap:14px;
+}
+
+.topbar-actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+}
+
+.secondary-btn{
+    padding:10px 16px;
+    background:#1e1e20;
+    color:white;
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:8px;
+    cursor:pointer;
+    font-size:13px;
+    font-weight:600;
+    transition:.3s;
+}
+
+.secondary-btn:hover{
+    background:#FFD166;
+    color:#1a1a1a;
+    transform:translateY(-2px);
 }
 
 #logoutBtn{
@@ -149,6 +176,34 @@ button:hover{
 #logoutBtn:hover{
     background:#b02a37;
     transform: translateY(-2px);
+}
+
+/* ANALYTICS DASHBOARD */
+.analytics-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:24px;
+    margin-top:24px;
+}
+
+.chart-box{
+    background:#35363A;
+    border-radius:16px;
+    padding:22px;
+}
+
+.chart-box h3{
+    margin-bottom:16px;
+    font-size:15px;
+    color:#ccc;
+}
+
+.chart-box canvas{
+    max-height:280px;
+}
+
+@media (max-width: 900px){
+    .analytics-grid{ grid-template-columns:1fr; }
 }
 
 /* =====================================================
@@ -235,7 +290,8 @@ button:hover{
 }
 
 .product-form-wrapper input,
-.product-form-wrapper textarea{
+.product-form-wrapper textarea,
+.product-form-wrapper select{
     width:100%;
     padding:14px;
     margin-bottom:15px;
@@ -249,7 +305,8 @@ button:hover{
 }
 
 .product-form-wrapper input:focus,
-.product-form-wrapper textarea:focus{
+.product-form-wrapper textarea:focus,
+.product-form-wrapper select:focus{
     outline:none;
     border-color:#FFD166;
     box-shadow:0 0 0 3px rgba(255,209,102,.15);

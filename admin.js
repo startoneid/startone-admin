@@ -21,6 +21,36 @@ import {
 
 console.log("ADMIN JS BERJALAN");
 
+// ==================================================================
+// EMAIL OTOMATIS (dipanggil setelah admin verifikasi pesanan)
+// Endpoint ini adalah Cloudflare Pages Function (/functions/api/send-email.js)
+// yang mengirim email lewat Resend API. Kalau ENV RESEND_API_KEY belum
+// diisi di dashboard Cloudflare Pages, fungsi ini akan gagal secara diam-diam
+// (tidak mengganggu proses verifikasi order tetap berhasil disimpan).
+// Detail setup: lihat PANDUAN-SETUP.md
+// ==================================================================
+async function sendOrderConfirmationEmail(payload) {
+    if (!payload.email) return;
+
+    try {
+        const response = await fetch("/api/send-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !result.success) {
+            console.warn("Email konfirmasi belum berhasil terkirim (cek setup email di PANDUAN-SETUP.md):", result);
+        } else {
+            console.log("Email konfirmasi terkirim ke:", payload.email);
+        }
+    } catch (error) {
+        console.warn("Gagal memanggil layanan email (belum di-setup?):", error.message);
+    }
+}
+
 // 3. Validasi Login Admin
 onAuthStateChanged(auth, (user) => {
     console.log("USER:", user);
@@ -105,25 +135,37 @@ onSnapshot(collection(db, "orders"), (snapshot) => {
             </tr>
         `;
     });
+
+    updateAnalyticsCharts();
 });
 
 // 6. Global Functions untuk Button Klik (window object)
 window.verifyOrder = async (id) => {
     const order = allOrders.find(item => item.id === id);
-    
-    // Tentukan saran link default berdasarkan produk lama kamu agar tidak repot mengetik ulang
-    let defaultURL = "";
-    if (order.product === "Summer Tone") {
-        defaultURL = "https://drive.google.com/file/d/1sFhbUASwvK7Qvn75zmkxohk2jDgWJFr7/view?usp=sharing";
-    } else if (order.product === "Korean Collection") {
-        defaultURL = "downloads/korean-collection.zip";
-    } else if (order.product === "Cinematic Collection") {
-        defaultURL = "downloads/cinematic-collection.zip";
+
+    // Cari link download dari data produk (field "Link Download Produk" di
+    // form Admin). Kalau produk sudah diisi link-nya, admin tidak perlu
+    // mengetik ulang setiap kali ada order baru untuk produk yang sama.
+    const matchedProduct =
+        allProducts.find(p => p.id === order.productId) ||
+        allProducts.find(p => p.name === order.product);
+
+    let defaultURL = matchedProduct?.downloadURL || "";
+
+    // Fallback lama untuk order produk lama yang belum sempat diisi field downloadURL-nya
+    if (!defaultURL) {
+        if (order.product === "Summer Tone") {
+            defaultURL = "https://drive.google.com/file/d/1sFhbUASwvK7Qvn75zmkxohk2jDgWJFr7/view?usp=sharing";
+        } else if (order.product === "Korean Collection") {
+            defaultURL = "downloads/korean-collection.zip";
+        } else if (order.product === "Cinematic Collection") {
+            defaultURL = "downloads/cinematic-collection.zip";
+        }
     }
 
-    // Munculkan dialog box prompt pengisian link download (Bisa kamu paste link GDrive produk baru di sini)
+    // Munculkan dialog box konfirmasi/link download (admin masih bisa mengubahnya manual kalau perlu)
     let downloadURL = prompt(
-        `Verifikasi pesanan: ${order.customerName}\n\nMasukkan link download untuk produk [ ${order.product} ] :`, 
+        `Verifikasi pesanan: ${order.customerName}\n\nMasukkan/konfirmasi link download untuk produk [ ${order.product} ] :`, 
         defaultURL
     );
     
@@ -138,6 +180,17 @@ window.verifyOrder = async (id) => {
             downloadURL: downloadURL.trim()
         });
         alert("Pesanan berhasil diverifikasi!");
+
+        // Kirim email konfirmasi otomatis ke pembeli (butuh Worker Resend
+        // sudah dideploy & EMAIL_WORKER_URL diisi — lihat PANDUAN-SETUP.md)
+        sendOrderConfirmationEmail({
+            email: order.email,
+            customerName: order.customerName,
+            product: order.product,
+            invoiceNumber: order.invoiceNumber,
+            downloadURL: downloadURL.trim()
+        });
+
     } catch (error) {
         console.error(error);
         alert("Gagal memverifikasi pesanan.");
@@ -254,6 +307,7 @@ onSnapshot(query(collection(db, "products"), orderBy("order", "asc")), (snapshot
                         style="width:70px;height:70px;object-fit:cover;border-radius:8px;">
                 </td>
                 <td>${data.name || "-"}</td>
+                <td>${data.category || "-"}</td>
                 <td>Rp ${Number(data.price || 0).toLocaleString("id-ID")}</td>
                 <td>
                     <button onclick="editProduct('${docSnap.id}')">✎ Edit</button>
@@ -266,7 +320,7 @@ onSnapshot(query(collection(db, "products"), orderBy("order", "asc")), (snapshot
 
     if (allProducts.length === 0) {
         productsTable.innerHTML = `
-            <tr><td colspan="4" style="text-align:center;color:#999;">
+            <tr><td colspan="5" style="text-align:center;color:#999;">
                 Belum ada produk. Klik "+ Tambah Produk" untuk menambahkan.
             </td></tr>
         `;
@@ -283,9 +337,12 @@ productForm?.addEventListener("submit", async (e) => {
         name: document.getElementById("productName").value.trim(),
         price: Number(document.getElementById("productPrice").value),
         image: document.getElementById("productImage").value.trim(),
+        category: document.getElementById("productCategory").value.trim(),
+        compatibility: document.getElementById("productCompatibility").value.trim(),
         shortDesc: document.getElementById("productShortDesc").value.trim(),
         detail: document.getElementById("productDetail").value.trim(),
-        tips: document.getElementById("productTips").value.trim()
+        tips: document.getElementById("productTips").value.trim(),
+        downloadURL: document.getElementById("productDownloadURL").value.trim()
     };
 
     try {
@@ -324,9 +381,12 @@ window.editProduct = (id) => {
     document.getElementById("productName").value = product.name || "";
     document.getElementById("productPrice").value = product.price || "";
     document.getElementById("productImage").value = product.image || "";
+    document.getElementById("productCategory").value = product.category || "";
+    document.getElementById("productCompatibility").value = product.compatibility || "";
     document.getElementById("productShortDesc").value = product.shortDesc || "";
     document.getElementById("productDetail").value = product.detail || "";
     document.getElementById("productTips").value = product.tips || "";
+    document.getElementById("productDownloadURL").value = product.downloadURL || "";
 
     productSubmitBtn.textContent = "Update Produk";
     productFormWrapper.style.display = "block";
@@ -345,3 +405,177 @@ window.deleteProduct = async (id) => {
         alert("Gagal menghapus produk: " + error.message);
     }
 };
+
+// ==================================================================
+// 10. DASHBOARD ANALITIK (Chart.js)
+// ==================================================================
+// Grafik dibuat murni dari data "orders" yang sudah ada di allOrders,
+// dihitung ulang setiap kali ada perubahan data (realtime).
+// ==================================================================
+
+let revenueChartInstance = null;
+let topProductsChartInstance = null;
+
+function toDateKey(timestamp) {
+    // Firestore Timestamp -> Date -> "DD/MM"
+    if (!timestamp || !timestamp.toDate) return null;
+    const d = timestamp.toDate();
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function updateAnalyticsCharts() {
+    const revenueCanvas = document.getElementById("revenueChart");
+    const topProductsCanvas = document.getElementById("topProductsChart");
+    if (!revenueCanvas || !topProductsCanvas || typeof Chart === "undefined") return;
+
+    // ---- Revenue 30 hari terakhir ----
+    const days = [];
+    const revenueByDay = {};
+
+    for (let i = 29; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+        days.push(key);
+        revenueByDay[key] = 0;
+    }
+
+    allOrders.forEach(order => {
+        if (order.status !== "verified") return;
+        const key = toDateKey(order.createdAt);
+        if (key && key in revenueByDay) {
+            revenueByDay[key] += Number(order.price) || 0;
+        }
+    });
+
+    const revenueData = days.map(d => revenueByDay[d]);
+
+    if (revenueChartInstance) revenueChartInstance.destroy();
+    revenueChartInstance = new Chart(revenueCanvas, {
+        type: "line",
+        data: {
+            labels: days,
+            datasets: [{
+                label: "Revenue (Rp)",
+                data: revenueData,
+                borderColor: "#FFD166",
+                backgroundColor: "rgba(255,209,102,.15)",
+                fill: true,
+                tension: 0.35,
+                pointRadius: 0,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: "#999", maxTicksLimit: 8 }, grid: { color: "rgba(255,255,255,.05)" } },
+                y: { ticks: { color: "#999" }, grid: { color: "rgba(255,255,255,.05)" } }
+            }
+        }
+    });
+
+    // ---- Produk terlaris (top 5 berdasarkan order verified) ----
+    const countByProduct = {};
+    allOrders.forEach(order => {
+        if (order.status !== "verified") return;
+        const name = order.product || "Lainnya";
+        countByProduct[name] = (countByProduct[name] || 0) + 1;
+    });
+
+    const sorted = Object.entries(countByProduct).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+    if (topProductsChartInstance) topProductsChartInstance.destroy();
+    topProductsChartInstance = new Chart(topProductsCanvas, {
+        type: "bar",
+        data: {
+            labels: sorted.map(x => x[0]),
+            datasets: [{
+                label: "Jumlah Terjual",
+                data: sorted.map(x => x[1]),
+                backgroundColor: "#FFD166",
+                borderRadius: 8,
+            }]
+        },
+        options: {
+            responsive: true,
+            indexAxis: "y",
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: "#999", stepSize: 1 }, grid: { color: "rgba(255,255,255,.05)" } },
+                y: { ticks: { color: "#ddd" }, grid: { display: false } }
+            }
+        }
+    });
+}
+
+// ==================================================================
+// 11. EXPORT CSV & BACKUP JSON
+// ==================================================================
+
+function downloadFile(filename, content, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+}
+
+function toCSVValue(value) {
+    const str = String(value ?? "");
+    if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+        return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+}
+
+function arrayToCSV(rows, headers) {
+    const headerLine = headers.map(toCSVValue).join(",");
+    const lines = rows.map(row => headers.map(h => toCSVValue(row[h])).join(","));
+    return [headerLine, ...lines].join("\n");
+}
+
+document.getElementById("exportOrdersBtn")?.addEventListener("click", () => {
+    if (allOrders.length === 0) {
+        alert("Belum ada data order untuk diekspor.");
+        return;
+    }
+
+    const headers = ["invoiceNumber", "customerName", "email", "phone", "product", "price", "status"];
+    const csv = arrayToCSV(allOrders, headers);
+    const today = new Date().toISOString().slice(0, 10);
+    downloadFile(`startone-orders-${today}.csv`, csv, "text/csv;charset=utf-8;");
+});
+
+document.getElementById("exportProductsBtn")?.addEventListener("click", () => {
+    if (allProducts.length === 0) {
+        alert("Belum ada data produk untuk diekspor.");
+        return;
+    }
+
+    const headers = ["name", "category", "compatibility", "price", "shortDesc"];
+    const csv = arrayToCSV(allProducts, headers);
+    const today = new Date().toISOString().slice(0, 10);
+    downloadFile(`startone-products-${today}.csv`, csv, "text/csv;charset=utf-8;");
+});
+
+document.getElementById("backupDataBtn")?.addEventListener("click", () => {
+    const backup = {
+        exportedAt: new Date().toISOString(),
+        products: allProducts,
+        orders: allOrders
+    };
+
+    const today = new Date().toISOString().slice(0, 10);
+    downloadFile(
+        `startone-backup-${today}.json`,
+        JSON.stringify(backup, null, 2),
+        "application/json;charset=utf-8;"
+    );
+
+    alert("Backup berhasil diunduh. Simpan file ini di tempat yang aman (Google Drive/penyimpanan lokal).");
+});
