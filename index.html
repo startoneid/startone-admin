@@ -119,6 +119,17 @@ href="style.css">
 
         <input type="url" id="productDownloadURL" placeholder="Link Download Produk (Google Drive/lainnya) — dipakai untuk verifikasi & email otomatis" required>
 
+        <div class="product-visibility-options">
+            <label class="checkbox-label">
+                <input type="checkbox" id="productShowInFeatured" checked>
+                Tampilkan di Featured Collections (Halaman Utama)
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="productShowInShop" checked>
+                Tampilkan di Halaman Shop
+            </label>
+        </div>
+
         <div class="form-actions">
             <button type="submit" id="productSubmitBtn">Simpan Produk</button>
             <button type="button" id="productCancelBtn">Batal</button>
@@ -136,6 +147,7 @@ href="style.css">
 <th>Nama Produk</th>
 <th>Kategori</th>
 <th>Harga</th>
+<th>Tampil di</th>
 <th>Aksi</th>
 </tr>
 </thead>

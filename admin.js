@@ -310,6 +310,10 @@ onSnapshot(query(collection(db, "products"), orderBy("order", "asc")), (snapshot
                 <td>${data.category || "-"}</td>
                 <td>Rp ${Number(data.price || 0).toLocaleString("id-ID")}</td>
                 <td>
+                    <span class="visibility-badge ${data.showInFeatured !== false ? "on" : ""}">Featured</span>
+                    <span class="visibility-badge ${data.showInShop !== false ? "on" : ""}">Shop</span>
+                </td>
+                <td>
                     <button onclick="editProduct('${docSnap.id}')">✎ Edit</button>
                     <button style="background:#dc3545;color:white;margin-left:8px;"
                         onclick="deleteProduct('${docSnap.id}')">🗑 Hapus</button>
@@ -320,7 +324,7 @@ onSnapshot(query(collection(db, "products"), orderBy("order", "asc")), (snapshot
 
     if (allProducts.length === 0) {
         productsTable.innerHTML = `
-            <tr><td colspan="5" style="text-align:center;color:#999;">
+            <tr><td colspan="6" style="text-align:center;color:#999;">
                 Belum ada produk. Klik "+ Tambah Produk" untuk menambahkan.
             </td></tr>
         `;
@@ -342,7 +346,9 @@ productForm?.addEventListener("submit", async (e) => {
         shortDesc: document.getElementById("productShortDesc").value.trim(),
         detail: document.getElementById("productDetail").value.trim(),
         tips: document.getElementById("productTips").value.trim(),
-        downloadURL: document.getElementById("productDownloadURL").value.trim()
+        downloadURL: document.getElementById("productDownloadURL").value.trim(),
+        showInFeatured: document.getElementById("productShowInFeatured").checked,
+        showInShop: document.getElementById("productShowInShop").checked
     };
 
     try {
@@ -387,6 +393,8 @@ window.editProduct = (id) => {
     document.getElementById("productDetail").value = product.detail || "";
     document.getElementById("productTips").value = product.tips || "";
     document.getElementById("productDownloadURL").value = product.downloadURL || "";
+    document.getElementById("productShowInFeatured").checked = product.showInFeatured !== false;
+    document.getElementById("productShowInShop").checked = product.showInShop !== false;
 
     productSubmitBtn.textContent = "Update Produk";
     productFormWrapper.style.display = "block";
