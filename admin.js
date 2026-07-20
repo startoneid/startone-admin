@@ -11,15 +11,27 @@ import {
     collection,
     onSnapshot,
     doc,
+    getDoc,
+    setDoc,
     updateDoc,
     addDoc,
     deleteDoc,
+    deleteField,
     query,
     orderBy,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 console.log("ADMIN JS BERJALAN");
+
+// Mencegah stored-XSS: data seperti nama pelanggan berasal langsung dari
+// input form checkout di sisi publik, jadi harus di-escape sebelum
+// dimasukkan ke innerHTML di panel Admin.
+function escapeHTML(str) {
+    const div = document.createElement("div");
+    div.textContent = str ?? "";
+    return div.innerHTML;
+}
 
 // ==================================================================
 // EMAIL OTOMATIS (dipanggil setelah admin verifikasi pesanan)
@@ -124,13 +136,13 @@ onSnapshot(collection(db, "orders"), (snapshot) => {
                     <br>
                     <button style="margin-top:8px;padding:5px 10px;font-size:12px;cursor:pointer;" onclick="copyInvoice('${data.invoiceNumber}')">Copy</button>
                 </td>
-                <td>${data.customerName}</td>
-                <td>${data.product}</td>
+                <td>${escapeHTML(data.customerName)}</td>
+                <td>${escapeHTML(data.product)}</td>
                 <td>Rp ${Number(data.price).toLocaleString("id-ID")}</td>
                 <td>
-                    ${data.paymentProof ? `<a href="${data.paymentProof}" target="_blank">📷 Lihat Bukti</a>` : `<span style="color:red;">Belum Upload</span>`}
+                    ${data.paymentProof ? `<a href="${escapeHTML(data.paymentProof)}" target="_blank">📷 Lihat Bukti</a>` : `<span style="color:red;">Belum Upload</span>`}
                 </td>
-                <td>${data.status}</td>
+                <td>${escapeHTML(data.status)}</td>
                 <td>${action}</td>
             </tr>
         `;
@@ -150,7 +162,7 @@ window.verifyOrder = async (id) => {
         allProducts.find(p => p.id === order.productId) ||
         allProducts.find(p => p.name === order.product);
 
-    let defaultURL = matchedProduct?.downloadURL || "";
+    let defaultURL = allProductSecrets[matchedProduct?.id]?.downloadURL || "";
 
     // Fallback lama untuk order produk lama yang belum sempat diisi field downloadURL-nya
     if (!defaultURL) {
@@ -264,7 +276,19 @@ const productIdInput = document.getElementById("productId");
 const productSubmitBtn = document.getElementById("productSubmitBtn");
 
 let allProducts = [];
+let allProductSecrets = {}; // { [productId]: { downloadURL } } - hanya bisa dibaca admin (lihat firestore.rules)
 let editingProductId = null;
+
+// Realtime data downloadURL produk (koleksi terpisah "productSecrets" supaya
+// TIDAK ikut terbaca publik lewat listener "products" di halaman utama/shop).
+onSnapshot(collection(db, "productSecrets"), (snapshot) => {
+    allProductSecrets = {};
+    snapshot.forEach((docSnap) => {
+        allProductSecrets[docSnap.id] = docSnap.data();
+    });
+}, (error) => {
+    console.error("Gagal memuat data link download:", error);
+});
 
 function resetProductForm() {
     productForm.reset();
@@ -291,6 +315,21 @@ productCancelBtn?.addEventListener("click", () => {
     productFormWrapper.style.display = "none";
 });
 
+// Migrasi otomatis satu kali: kalau ada produk LAMA (dibuat sebelum
+// pemisahan koleksi productSecrets) yang masih menyimpan downloadURL
+// langsung di dokumen "products" (bisa dibaca publik), pindahkan
+// diam-diam ke "productSecrets" lalu hapus dari "products". Sehingga
+// tidak perlu admin membuka & menyimpan ulang tiap produk satu-satu.
+async function migrateLegacyDownloadURL(productId, downloadURL, productName) {
+    try {
+        await setDoc(doc(db, "productSecrets", productId), { downloadURL }, { merge: true });
+        await updateDoc(doc(db, "products", productId), { downloadURL: deleteField() });
+        console.log("Migrasi link download lama untuk produk:", productName);
+    } catch (error) {
+        console.error("Gagal migrasi link download produk", productId, error);
+    }
+}
+
 // Realtime daftar produk, diurutkan berdasarkan field "order"
 onSnapshot(query(collection(db, "products"), orderBy("order", "asc")), (snapshot) => {
     allProducts = [];
@@ -299,6 +338,11 @@ onSnapshot(query(collection(db, "products"), orderBy("order", "asc")), (snapshot
     snapshot.forEach((docSnap) => {
         const data = docSnap.data();
         allProducts.push({ id: docSnap.id, ...data });
+
+        // Bersihkan field downloadURL lama kalau masih ada (lihat komentar di atas)
+        if (data.downloadURL) {
+            migrateLegacyDownloadURL(docSnap.id, data.downloadURL, data.name);
+        }
 
         productsTable.innerHTML += `
             <tr>
@@ -337,6 +381,7 @@ onSnapshot(query(collection(db, "products"), orderBy("order", "asc")), (snapshot
 productForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    // Field publik (dibaca semua pengunjung lewat halaman utama & Shop)
     const payload = {
         name: document.getElementById("productName").value.trim(),
         price: Number(document.getElementById("productPrice").value),
@@ -346,27 +391,38 @@ productForm?.addEventListener("submit", async (e) => {
         shortDesc: document.getElementById("productShortDesc").value.trim(),
         detail: document.getElementById("productDetail").value.trim(),
         tips: document.getElementById("productTips").value.trim(),
-        downloadURL: document.getElementById("productDownloadURL").value.trim(),
         showInFeatured: document.getElementById("productShowInFeatured").checked,
         showInShop: document.getElementById("productShowInShop").checked
     };
 
+    // Link download TIDAK disimpan di sini lagi — field ini sengaja
+    // dipisah ke koleksi "productSecrets" yang hanya bisa dibaca oleh
+    // Admin (lihat firestore.rules), supaya tidak bisa diakses publik
+    // lewat listener produk di halaman utama/Shop sebelum pelanggan bayar.
+    const downloadURL = document.getElementById("productDownloadURL").value.trim();
+
     try {
+        let productId = editingProductId;
+
         if (editingProductId) {
             // Mode edit: perbarui dokumen yang sudah ada
             await updateDoc(doc(db, "products", editingProductId), payload);
-            alert("Produk berhasil diperbarui!");
         } else {
             // Mode tambah: buat dokumen baru
             // field "order" pakai timestamp supaya produk baru tampil
             // paling akhir/terbaru secara berurutan
-            await addDoc(collection(db, "products"), {
+            const docRef = await addDoc(collection(db, "products"), {
                 ...payload,
                 order: Date.now(),
                 createdAt: serverTimestamp()
             });
-            alert("Produk berhasil ditambahkan! Cek halaman utama, jumlah produk sudah bertambah.");
+            productId = docRef.id;
         }
+
+        // Simpan/perbarui link download di koleksi terpisah
+        await setDoc(doc(db, "productSecrets", productId), { downloadURL }, { merge: true });
+
+        alert(editingProductId ? "Produk berhasil diperbarui!" : "Produk berhasil ditambahkan! Cek halaman utama, jumlah produk sudah bertambah.");
 
         resetProductForm();
         productFormWrapper.style.display = "none";
@@ -392,7 +448,7 @@ window.editProduct = (id) => {
     document.getElementById("productShortDesc").value = product.shortDesc || "";
     document.getElementById("productDetail").value = product.detail || "";
     document.getElementById("productTips").value = product.tips || "";
-    document.getElementById("productDownloadURL").value = product.downloadURL || "";
+    document.getElementById("productDownloadURL").value = allProductSecrets[id]?.downloadURL || "";
     document.getElementById("productShowInFeatured").checked = product.showInFeatured !== false;
     document.getElementById("productShowInShop").checked = product.showInShop !== false;
 
@@ -407,6 +463,8 @@ window.deleteProduct = async (id) => {
 
     try {
         await deleteDoc(doc(db, "products", id));
+        // Hapus juga link download terkait supaya tidak ada data "yatim" tertinggal
+        await deleteDoc(doc(db, "productSecrets", id)).catch(() => {});
         alert("Produk berhasil dihapus.");
     } catch (error) {
         console.error(error);
@@ -575,6 +633,7 @@ document.getElementById("backupDataBtn")?.addEventListener("click", () => {
     const backup = {
         exportedAt: new Date().toISOString(),
         products: allProducts,
+        productSecrets: allProductSecrets,
         orders: allOrders
     };
 
