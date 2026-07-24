@@ -353,6 +353,7 @@ onSnapshot(query(collection(db, "products"), orderBy("order", "asc")), (snapshot
                 <td>${data.name || "-"}</td>
                 <td>${data.category || "-"}</td>
                 <td>Rp ${Number(data.price || 0).toLocaleString("id-ID")}</td>
+                <td>${Number(data.itemsSold || 0).toLocaleString("id-ID")}</td>
                 <td>
                     <span class="visibility-badge ${data.showInFeatured !== false ? "on" : ""}">Featured</span>
                     <span class="visibility-badge ${data.showInShop !== false ? "on" : ""}">Shop</span>
@@ -368,7 +369,7 @@ onSnapshot(query(collection(db, "products"), orderBy("order", "asc")), (snapshot
 
     if (allProducts.length === 0) {
         productsTable.innerHTML = `
-            <tr><td colspan="6" style="text-align:center;color:#999;">
+            <tr><td colspan="7" style="text-align:center;color:#999;">
                 Belum ada produk. Klik "+ Tambah Produk" untuk menambahkan.
             </td></tr>
         `;
@@ -391,6 +392,7 @@ productForm?.addEventListener("submit", async (e) => {
         shortDesc: document.getElementById("productShortDesc").value.trim(),
         detail: document.getElementById("productDetail").value.trim(),
         tips: document.getElementById("productTips").value.trim(),
+        itemsSold: Number(document.getElementById("productItemsSold").value) || 0,
         showInFeatured: document.getElementById("productShowInFeatured").checked,
         showInShop: document.getElementById("productShowInShop").checked
     };
@@ -448,6 +450,7 @@ window.editProduct = (id) => {
     document.getElementById("productShortDesc").value = product.shortDesc || "";
     document.getElementById("productDetail").value = product.detail || "";
     document.getElementById("productTips").value = product.tips || "";
+    document.getElementById("productItemsSold").value = product.itemsSold || 0;
     document.getElementById("productDownloadURL").value = allProductSecrets[id]?.downloadURL || "";
     document.getElementById("productShowInFeatured").checked = product.showInFeatured !== false;
     document.getElementById("productShowInShop").checked = product.showInShop !== false;
