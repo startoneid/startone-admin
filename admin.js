@@ -142,9 +142,7 @@ onSnapshot(collection(db, "orders"), (snapshot) => {
                 <td>${escapeHTML(data.product)}</td>
                 <td>Rp ${Number(data.price).toLocaleString("id-ID")}</td>
                 <td>
-                    ${data.paymentMethod === "ipaymu"
-                        ? `<span style="color:#2ecc71;">✅ iPaymu (Otomatis)</span>`
-                        : (data.paymentProof ? `<a href="${escapeHTML(data.paymentProof)}" target="_blank">📷 Lihat Bukti</a>` : `<span style="color:red;">Belum Upload</span>`)}
+                    ${data.paymentProof ? `<a href="${escapeHTML(data.paymentProof)}" target="_blank">📷 Lihat Bukti</a>` : `<span style="color:red;">Belum Upload</span>`}
                 </td>
                 <td>${escapeHTML(data.status)}</td>
                 <td>${action}</td>
