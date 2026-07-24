@@ -88,6 +88,8 @@ const totalOrders = document.getElementById("totalOrders");
 const waitingOrders = document.getElementById("waitingOrders");
 const verifiedOrders = document.getElementById("verifiedOrders");
 const totalRevenue = document.getElementById("totalRevenue");
+const reviewsTable = document.getElementById("reviewsTable");
+const reviewSearchInput = document.getElementById("reviewSearchInput");
 
 let allOrders = [];
 
@@ -244,6 +246,89 @@ function filterOrders() {
 
 searchInput.addEventListener("input", filterOrders);
 statusFilter.addEventListener("change", filterOrders);
+
+// ==================================================================
+// KELOLA ULASAN PELANGGAN (Reviews)
+// Realtime dari koleksi Firestore "reviews". Admin hanya bisa
+// menghapus ulasan (moderasi spam/tidak pantas) — sesuai firestore.rules
+// yang mengizinkan update/delete koleksi "reviews" hanya untuk admin.
+// ==================================================================
+
+let allReviews = [];
+
+function toDateTimeText(timestamp) {
+    if (!timestamp || !timestamp.toDate) return "-";
+    const d = timestamp.toDate();
+    const tanggal = String(d.getDate()).padStart(2, "0") + "/" +
+        String(d.getMonth() + 1).padStart(2, "0") + "/" + d.getFullYear();
+    const jam = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    return `${tanggal} ${jam}`;
+}
+
+function renderReviewsTable() {
+    if (!reviewsTable) return;
+
+    const keyword = (reviewSearchInput?.value || "").toLowerCase();
+
+    const filtered = allReviews.filter((review) => {
+        const name = (review.name || "").toLowerCase();
+        const product = (review.product || "").toLowerCase();
+        const message = (review.message || "").toLowerCase();
+        return name.includes(keyword) || product.includes(keyword) || message.includes(keyword);
+    });
+
+    if (filtered.length === 0) {
+        reviewsTable.innerHTML = `
+            <tr><td colspan="6" style="text-align:center;color:#999;">
+                ${allReviews.length === 0 ? "Belum ada ulasan masuk." : "Tidak ada ulasan yang cocok dengan pencarian."}
+            </td></tr>
+        `;
+        return;
+    }
+
+    reviewsTable.innerHTML = filtered.map((review) => `
+        <tr>
+            <td>${escapeHTML(review.name || "-")}</td>
+            <td>${escapeHTML(review.product || "-")}</td>
+            <td style="max-width:280px;white-space:pre-wrap;">${escapeHTML(review.message || "-")}</td>
+            <td>${"⭐".repeat(Math.min(5, Math.max(0, Number(review.rating) || 0)))}</td>
+            <td>${toDateTimeText(review.createdAt)}</td>
+            <td>
+                <button style="background:#dc3545;color:white;" onclick="deleteReview('${review.id}')">🗑 Hapus</button>
+            </td>
+        </tr>
+    `).join("");
+}
+
+onSnapshot(query(collection(db, "reviews"), orderBy("createdAt", "desc")), (snapshot) => {
+    allReviews = [];
+    snapshot.forEach((docSnap) => {
+        allReviews.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    renderReviewsTable();
+}, (error) => {
+    console.error("Gagal memuat ulasan:", error);
+    if (reviewsTable) {
+        reviewsTable.innerHTML = `
+            <tr><td colspan="6" style="text-align:center;color:#ff8080;">
+                Gagal memuat ulasan.
+            </td></tr>
+        `;
+    }
+});
+
+reviewSearchInput?.addEventListener("input", renderReviewsTable);
+
+window.deleteReview = async (id) => {
+    if (!confirm("Yakin ingin menghapus ulasan ini? Tindakan ini tidak bisa dibatalkan.")) return;
+
+    try {
+        await deleteDoc(doc(db, "reviews", id));
+    } catch (error) {
+        console.error(error);
+        alert("Gagal menghapus ulasan: " + error.message);
+    }
+};
 
 // 8. Fitur Logout
 const logoutBtn = document.getElementById("logoutBtn");
