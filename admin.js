@@ -1,5 +1,5 @@
 // 1. Gabungkan import auth dan db dari file firebase.js di folder yang sama
-import { auth, db } from "./firebase.js"; 
+import { auth, db, storage } from "./firebase.js"; 
 
 // 2. Import modul Auth & Firestore dari CDN
 import {
@@ -21,6 +21,12 @@ import {
     orderBy,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import {
+    ref as storageRef,
+    uploadBytes,
+    getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 console.log("ADMIN JS BERJALAN");
 
@@ -360,6 +366,153 @@ const productsTable = document.getElementById("productsTable");
 const productIdInput = document.getElementById("productId");
 const productSubmitBtn = document.getElementById("productSubmitBtn");
 
+// ==================================================================
+// GALERI BEFORE/AFTER — baris dinamis di form Tambah/Edit Produk.
+// Tiap baris punya 2 kolom (Before & After), masing-masing bisa diisi
+// lewat link foto ATAU upload file langsung (ke Firebase Storage).
+// Data akhirnya disimpan di field "gallery" pada dokumen produk:
+// [{ before: "url", after: "url" }, ...]
+// ==================================================================
+const baRowsContainer = document.getElementById("baRows");
+const baAddRowBtn = document.getElementById("baAddRowBtn");
+
+function updateBaPreview(input, img) {
+    const url = input.value.trim();
+    if (url) {
+        img.src = url;
+        img.style.display = "block";
+    } else {
+        img.removeAttribute("src");
+        img.style.display = "none";
+    }
+}
+
+async function handleBaUpload(file, row, kind) {
+    if (!file) return;
+
+    const urlInput = row.querySelector(kind === "before" ? ".ba-before-url" : ".ba-after-url");
+    const preview = row.querySelector(kind === "before" ? ".ba-before-preview" : ".ba-after-preview");
+    const status = row.querySelector(kind === "before" ? ".ba-before-status" : ".ba-after-status");
+
+    if (!file.type.startsWith("image/")) {
+        alert("File harus berupa gambar (JPG/PNG/WEBP, dll).");
+        return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+        alert("Ukuran gambar maksimal 8MB.");
+        return;
+    }
+
+    status.textContent = "⏳ Mengupload...";
+    status.className = "ba-upload-status uploading";
+
+    try {
+        const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+        const folderId = editingProductId || `temp-${Date.now()}`;
+        const path = `product-gallery/${folderId}/${kind}-${Date.now()}-${safeName}`;
+        const fileRef = storageRef(storage, path);
+
+        await uploadBytes(fileRef, file);
+        const downloadURL = await getDownloadURL(fileRef);
+
+        urlInput.value = downloadURL;
+        updateBaPreview(urlInput, preview);
+
+        status.textContent = "✓ Berhasil diupload";
+        status.className = "ba-upload-status success";
+        setTimeout(() => { status.textContent = ""; status.className = "ba-upload-status"; }, 3000);
+    } catch (error) {
+        console.error("Gagal upload gambar galeri:", error);
+        status.textContent = "✕ Gagal upload: " + error.message;
+        status.className = "ba-upload-status error";
+    }
+}
+
+let baRowCounter = 0;
+
+function createBaRow(beforeURL = "", afterURL = "") {
+    baRowCounter++;
+
+    const row = document.createElement("div");
+    row.className = "ba-row";
+
+    row.innerHTML = `
+        <div class="ba-row-col">
+            <span class="ba-row-label">Foto Before (sebelum)</span>
+            <div class="ba-row-input-group">
+                <input type="url" class="ba-before-url" placeholder="Link foto Before (https://...)" value="${beforeURL}">
+                <label class="ba-upload-btn">
+                    📤 Upload
+                    <input type="file" class="ba-before-file" accept="image/*" hidden>
+                </label>
+            </div>
+            <span class="ba-upload-status"></span>
+            <img class="ba-preview ba-before-preview" alt="Preview foto before" style="display:none;">
+        </div>
+        <div class="ba-row-col">
+            <span class="ba-row-label">Foto After (sesudah)</span>
+            <div class="ba-row-input-group">
+                <input type="url" class="ba-after-url" placeholder="Link foto After (https://...)" value="${afterURL}">
+                <label class="ba-upload-btn">
+                    📤 Upload
+                    <input type="file" class="ba-after-file" accept="image/*" hidden>
+                </label>
+            </div>
+            <span class="ba-upload-status"></span>
+            <img class="ba-preview ba-after-preview" alt="Preview foto after" style="display:none;">
+        </div>
+        <button type="button" class="ba-row-remove" title="Hapus baris ini">✕</button>
+    `;
+
+    const beforeUrlInput = row.querySelector(".ba-before-url");
+    const afterUrlInput = row.querySelector(".ba-after-url");
+    const beforePreview = row.querySelector(".ba-before-preview");
+    const afterPreview = row.querySelector(".ba-after-preview");
+
+    updateBaPreview(beforeUrlInput, beforePreview);
+    updateBaPreview(afterUrlInput, afterPreview);
+
+    beforeUrlInput.addEventListener("input", () => updateBaPreview(beforeUrlInput, beforePreview));
+    afterUrlInput.addEventListener("input", () => updateBaPreview(afterUrlInput, afterPreview));
+
+    row.querySelector(".ba-before-file").addEventListener("change", (e) => {
+        handleBaUpload(e.target.files[0], row, "before");
+        e.target.value = "";
+    });
+    row.querySelector(".ba-after-file").addEventListener("change", (e) => {
+        handleBaUpload(e.target.files[0], row, "after");
+        e.target.value = "";
+    });
+
+    row.querySelector(".ba-row-remove").addEventListener("click", () => row.remove());
+
+    return row;
+}
+
+function resetBaRows(gallery = []) {
+    baRowsContainer.innerHTML = "";
+    if (Array.isArray(gallery) && gallery.length) {
+        gallery.forEach(g => baRowsContainer.appendChild(createBaRow(g?.before || "", g?.after || "")));
+    }
+}
+
+function collectBaGallery() {
+    const gallery = [];
+    baRowsContainer.querySelectorAll(".ba-row").forEach((row) => {
+        const before = row.querySelector(".ba-before-url").value.trim();
+        const after = row.querySelector(".ba-after-url").value.trim();
+        if (before && after) {
+            gallery.push({ before, after });
+        }
+    });
+    return gallery;
+}
+
+baAddRowBtn?.addEventListener("click", () => {
+    baRowsContainer.appendChild(createBaRow());
+});
+
 let allProducts = [];
 let allProductSecrets = {}; // { [productId]: { downloadURL } } - hanya bisa dibaca admin (lihat firestore.rules)
 let editingProductId = null;
@@ -380,6 +533,7 @@ function resetProductForm() {
     productIdInput.value = "";
     editingProductId = null;
     productSubmitBtn.textContent = "Simpan Produk";
+    resetBaRows([]);
 }
 
 // Tombol "+ Tambah Produk" -> buka/tutup form kosong
@@ -478,6 +632,7 @@ productForm?.addEventListener("submit", async (e) => {
         detail: document.getElementById("productDetail").value.trim(),
         tips: document.getElementById("productTips").value.trim(),
         itemsSold: Number(document.getElementById("productItemsSold").value) || 0,
+        gallery: collectBaGallery(),
         showInFeatured: document.getElementById("productShowInFeatured").checked,
         showInShop: document.getElementById("productShowInShop").checked
     };
@@ -539,6 +694,7 @@ window.editProduct = (id) => {
     document.getElementById("productDownloadURL").value = allProductSecrets[id]?.downloadURL || "";
     document.getElementById("productShowInFeatured").checked = product.showInFeatured !== false;
     document.getElementById("productShowInShop").checked = product.showInShop !== false;
+    resetBaRows(product.gallery || []);
 
     productSubmitBtn.textContent = "Update Produk";
     productFormWrapper.style.display = "block";

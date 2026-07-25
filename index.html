@@ -117,6 +117,19 @@ href="style.css">
 
         <textarea id="productTips" placeholder="Tips penggunaan produk (tampil saat produk diklik di halaman utama)"></textarea>
 
+        <div class="ba-editor" id="baEditor">
+            <div class="ba-editor-header">
+                <label>Galeri Before/After (opsional)</label>
+                <button type="button" id="baAddRowBtn">+ Tambah Before/After</button>
+            </div>
+            <p class="ba-editor-hint">
+                Tiap baris = 1 pasang foto (sebelum &amp; sesudah pakai preset) yang tampil sebagai
+                slider geser saat pelanggan membuka produk ini di Shop/Featured Collections.
+                Bisa upload gambar langsung (tombol Upload) atau tempel link foto yang sudah ada.
+            </p>
+            <div id="baRows"></div>
+        </div>
+
         <input type="number" id="productItemsSold" placeholder="Jumlah Item Terjual (contoh: 120)" min="0" value="0">
 
         <input type="url" id="productDownloadURL" placeholder="Link Download Produk (Google Drive/lainnya) — dipakai untuk verifikasi & email otomatis" required>

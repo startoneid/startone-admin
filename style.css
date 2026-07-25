@@ -374,6 +374,158 @@ button:hover{
     background:#777;
 }
 
+/* =====================================================
+   GALERI BEFORE/AFTER (editor di form Tambah/Edit Produk)
+===================================================== */
+
+.ba-editor{
+    background:#1e1e20;
+    border-radius:12px;
+    padding:16px;
+    margin-bottom:15px;
+}
+
+.ba-editor-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:8px;
+}
+
+.ba-editor-header label{
+    font-weight:600;
+    font-size:14px;
+    color:#fff;
+}
+
+.ba-editor-header button{
+    padding:8px 14px;
+    font-size:13px;
+}
+
+.ba-editor-hint{
+    color:#999;
+    font-size:12.5px;
+    line-height:1.6;
+    margin:0 0 14px;
+}
+
+#baRows{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+}
+
+.ba-row{
+    position:relative;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    background:#28282B;
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:12px;
+    padding:16px;
+    padding-right:44px;
+}
+
+.ba-row-col{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.ba-row-label{
+    font-size:12px;
+    font-weight:600;
+    color:#FFD166;
+    text-transform:uppercase;
+    letter-spacing:.4px;
+}
+
+.ba-row-input-group{
+    display:flex;
+    gap:8px;
+}
+
+.ba-row-input-group input[type="url"]{
+    flex:1;
+    margin-bottom:0;
+    padding:10px 12px;
+    font-size:13px;
+    border-radius:8px;
+    background:#1e1e20;
+    color:white;
+    border:1px solid transparent;
+}
+
+.ba-row-input-group input[type="url"]:focus{
+    outline:none;
+    border-color:#FFD166;
+}
+
+.ba-upload-btn{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    white-space:nowrap;
+    padding:10px 12px;
+    font-size:12.5px;
+    font-weight:600;
+    border-radius:8px;
+    background:#3a3a3d;
+    color:#fff;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.ba-upload-btn:hover{
+    background:#FFD166;
+    color:#1a1a1a;
+}
+
+.ba-upload-status{
+    font-size:12px;
+    min-height:14px;
+}
+
+.ba-upload-status.uploading{ color:#FFD166; }
+.ba-upload-status.success{ color:#4caf50; }
+.ba-upload-status.error{ color:#ff6b6b; }
+
+.ba-preview{
+    width:100%;
+    max-height:130px;
+    object-fit:cover;
+    border-radius:8px;
+    border:1px solid rgba(255,255,255,.1);
+}
+
+.ba-row-remove{
+    position:absolute;
+    top:10px;
+    right:10px;
+    width:28px;
+    height:28px;
+    padding:0;
+    border-radius:50%;
+    background:#dc3545;
+    color:#fff;
+    font-size:13px;
+    line-height:1;
+}
+
+.ba-row-remove:hover{
+    background:#b02a37;
+    transform:translateY(0) scale(1.05);
+}
+
+@media (max-width:640px){
+    .ba-row{ grid-template-columns:1fr; }
+    .ba-row-input-group{ flex-direction:column; }
+}
+
 @media (max-width: 768px) {
     .section-header{ margin:25px 0 15px; }
     .section-header h2{ font-size:17px; }
