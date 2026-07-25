@@ -375,6 +375,84 @@ button:hover{
 }
 
 /* =====================================================
+   MODAL EDIT ULASAN
+===================================================== */
+
+.review-edit-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.6);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:999;
+}
+
+.review-edit-modal{
+    background:#35363A;
+    padding:25px;
+    border-radius:15px;
+    width:100%;
+    max-width:480px;
+    max-height:90vh;
+    overflow-y:auto;
+    box-shadow:0 10px 25px rgba(0,0,0,.3);
+}
+
+.review-edit-modal h3{
+    margin-bottom:18px;
+}
+
+.review-edit-modal label{
+    display:block;
+    margin:14px 0 6px;
+    font-size:14px;
+    font-weight:600;
+    color:#ddd;
+}
+
+.review-edit-modal input,
+.review-edit-modal textarea,
+.review-edit-modal select{
+    width:100%;
+    padding:12px;
+    border:1px solid transparent;
+    border-radius:10px;
+    background:#1e1e20;
+    color:white;
+    font-size:14px;
+    font-family:inherit;
+    transition:border .3s, box-shadow .3s;
+}
+
+.review-edit-modal input:focus,
+.review-edit-modal textarea:focus,
+.review-edit-modal select:focus{
+    outline:none;
+    border-color:#FFD166;
+    box-shadow:0 0 0 3px rgba(255,209,102,.15);
+}
+
+.review-edit-modal textarea{
+    min-height:80px;
+    resize:vertical;
+}
+
+.review-edit-modal .form-actions{
+    margin-top:18px;
+}
+
+#reviewEditCancelBtn{
+    background:#555;
+    color:white;
+}
+
+#reviewEditCancelBtn:hover{
+    background:#777;
+}
+
+/* =====================================================
    GALERI BEFORE/AFTER (editor di form Tambah/Edit Produk)
 ===================================================== */
 

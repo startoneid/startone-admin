@@ -278,6 +278,45 @@ href="style.css">
 
 </table>
 
+<div class="review-edit-overlay" id="reviewEditOverlay" style="display:none;">
+    <div class="review-edit-modal">
+
+        <h3>Edit Ulasan</h3>
+
+        <form id="reviewEditForm">
+
+            <input type="hidden" id="reviewEditId">
+
+            <label for="reviewEditName">Nama</label>
+            <input type="text" id="reviewEditName" maxlength="60" required>
+
+            <label for="reviewEditProduct">Produk yang Dibeli</label>
+            <select id="reviewEditProduct" required>
+                <option value="">-- Pilih Produk --</option>
+            </select>
+
+            <label for="reviewEditMessage">Pesan</label>
+            <textarea id="reviewEditMessage" maxlength="300" rows="4" required></textarea>
+
+            <label for="reviewEditRating">Rating</label>
+            <select id="reviewEditRating" required>
+                <option value="1">⭐ 1</option>
+                <option value="2">⭐⭐ 2</option>
+                <option value="3">⭐⭐⭐ 3</option>
+                <option value="4">⭐⭐⭐⭐ 4</option>
+                <option value="5">⭐⭐⭐⭐⭐ 5</option>
+            </select>
+
+            <div class="form-actions">
+                <button type="submit" id="reviewEditSubmitBtn">Simpan Perubahan</button>
+                <button type="button" id="reviewEditCancelBtn">Batal</button>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
 <script type="module" src="admin.js"></script>
 
 </body>

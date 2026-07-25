@@ -96,6 +96,15 @@ const verifiedOrders = document.getElementById("verifiedOrders");
 const totalRevenue = document.getElementById("totalRevenue");
 const reviewsTable = document.getElementById("reviewsTable");
 const reviewSearchInput = document.getElementById("reviewSearchInput");
+const reviewEditOverlay = document.getElementById("reviewEditOverlay");
+const reviewEditForm = document.getElementById("reviewEditForm");
+const reviewEditId = document.getElementById("reviewEditId");
+const reviewEditName = document.getElementById("reviewEditName");
+const reviewEditProduct = document.getElementById("reviewEditProduct");
+const reviewEditMessage = document.getElementById("reviewEditMessage");
+const reviewEditRating = document.getElementById("reviewEditRating");
+const reviewEditCancelBtn = document.getElementById("reviewEditCancelBtn");
+const reviewEditSubmitBtn = document.getElementById("reviewEditSubmitBtn");
 
 let allOrders = [];
 
@@ -300,7 +309,8 @@ function renderReviewsTable() {
             <td>${"⭐".repeat(Math.min(5, Math.max(0, Number(review.rating) || 0)))}</td>
             <td>${toDateTimeText(review.createdAt)}</td>
             <td>
-                <button style="background:#dc3545;color:white;" onclick="deleteReview('${review.id}')">🗑 Hapus</button>
+                <button onclick="editReview('${review.id}')">✎ Edit</button>
+                <button style="background:#dc3545;color:white;margin-left:8px;" onclick="deleteReview('${review.id}')">🗑 Hapus</button>
             </td>
         </tr>
     `).join("");
@@ -335,6 +345,83 @@ window.deleteReview = async (id) => {
         alert("Gagal menghapus ulasan: " + error.message);
     }
 };
+
+// Buka modal edit, isi form dengan data ulasan yang dipilih
+window.editReview = (id) => {
+    const review = allReviews.find((r) => r.id === id);
+    if (!review) return;
+
+    renderReviewEditProductOptions();
+
+    reviewEditId.value = review.id;
+    reviewEditName.value = review.name || "";
+    reviewEditMessage.value = review.message || "";
+    reviewEditRating.value = String(Math.min(5, Math.max(1, Number(review.rating) || 1)));
+
+    // Kalau produk pada ulasan lama sudah tidak ada di daftar produk saat
+    // ini (misal produk sudah dihapus), tambahkan sementara sebagai opsi
+    // supaya admin tetap bisa lihat/pilih ulang tanpa kehilangan data.
+    if (review.product && !allProducts.some((p) => p.name === review.product)) {
+        reviewEditProduct.innerHTML += `<option value="${escapeHTML(review.product)}">${escapeHTML(review.product)} (produk sudah tidak ada)</option>`;
+    }
+    reviewEditProduct.value = review.product || "";
+
+    reviewEditOverlay.style.display = "flex";
+};
+
+function closeReviewEditModal() {
+    reviewEditOverlay.style.display = "none";
+    reviewEditForm.reset();
+    reviewEditId.value = "";
+}
+
+reviewEditCancelBtn?.addEventListener("click", closeReviewEditModal);
+
+reviewEditOverlay?.addEventListener("click", (e) => {
+    if (e.target === reviewEditOverlay) closeReviewEditModal();
+});
+
+reviewEditForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const id = reviewEditId.value;
+    if (!id) return;
+
+    const payload = {
+        name: reviewEditName.value.trim(),
+        product: reviewEditProduct.value.trim(),
+        message: reviewEditMessage.value.trim(),
+        rating: Number(reviewEditRating.value)
+    };
+
+    if (!payload.name) {
+        alert("Nama wajib diisi.");
+        return;
+    }
+    if (!payload.product) {
+        alert("Produk yang dibeli wajib dipilih.");
+        return;
+    }
+    if (!payload.message) {
+        alert("Pesan ulasan wajib diisi.");
+        return;
+    }
+
+    reviewEditSubmitBtn.disabled = true;
+    reviewEditSubmitBtn.textContent = "Menyimpan...";
+
+    try {
+        await updateDoc(doc(db, "reviews", id), payload);
+        alert("Ulasan berhasil diperbarui!");
+        closeReviewEditModal();
+    } catch (error) {
+        console.error(error);
+        alert("Gagal memperbarui ulasan: " + error.message);
+    } finally {
+        reviewEditSubmitBtn.disabled = false;
+        reviewEditSubmitBtn.textContent = "Simpan Perubahan";
+    }
+});
 
 // 8. Fitur Logout
 const logoutBtn = document.getElementById("logoutBtn");
@@ -569,6 +656,26 @@ async function migrateLegacyDownloadURL(productId, downloadURL, productName) {
     }
 }
 
+// Isi ulang dropdown "Produk yang Dibeli" di modal edit ulasan, supaya
+// hanya bisa memilih produk yang benar-benar sudah diupload di website
+// (bukan lagi ketik bebas, mencegah data ulasan tidak sinkron dengan produk).
+function renderReviewEditProductOptions() {
+    if (!reviewEditProduct) return;
+
+    const currentValue = reviewEditProduct.value;
+    const options = allProducts
+        .map((p) => p.name)
+        .filter(Boolean)
+        .map((name) => `<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`)
+        .join("");
+
+    reviewEditProduct.innerHTML = `<option value="">-- Pilih Produk --</option>${options}`;
+
+    if (currentValue && allProducts.some((p) => p.name === currentValue)) {
+        reviewEditProduct.value = currentValue;
+    }
+}
+
 // Realtime daftar produk, diurutkan berdasarkan field "order"
 onSnapshot(query(collection(db, "products"), orderBy("order", "asc")), (snapshot) => {
     allProducts = [];
@@ -613,6 +720,8 @@ onSnapshot(query(collection(db, "products"), orderBy("order", "asc")), (snapshot
             </td></tr>
         `;
     }
+
+    renderReviewEditProductOptions();
 }, (error) => {
     console.error("Gagal memuat produk:", error);
 });
