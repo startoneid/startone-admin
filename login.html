@@ -5,11 +5,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Admin Login - StarTone</title>
+<title>StarTone | Admin Login</title>
 
-<link rel="icon" href="icon/StarTone Circle.png" type="image/x-icon">
+<link rel="icon" href="../icon/StarTone Circle.png" type="image/x-icon">
+<link rel="shortcut icon" href="../icon/StarTone Circle.png">
+<link rel="apple-touch-icon" href="../icon/StarTone Circle.png">
 <meta name="robots"
 content="noindex,nofollow">
+<meta name="theme-color" content="#090909">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="style.css">
 
@@ -19,25 +26,51 @@ body{
 
 display:flex;
 
+flex-direction:column;
+
 justify-content:center;
 
 align-items:center;
 
 height:100vh;
 
-background:#1f1f1f;
+background:var(--bg,#090909);
 
+gap:26px;
+
+}
+
+.login-brand{
+    font-family:'Sora',sans-serif;
+    font-size:30px;
+    font-weight:800;
+    letter-spacing:-.02em;
+    color:#fff;
+    text-decoration:none;
+}
+
+.login-brand span{
+    background:linear-gradient(90deg,#FFD166,#ff9e6d);
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
 }
 
 .login-box{
 
 width:380px;
 
-background:#2b2b2b;
+max-width:calc(100vw - 40px);
+
+background:var(--bg-elevated,#141416);
+
+border:1px solid rgba(255,255,255,.08);
 
 padding:30px;
 
-border-radius:12px;
+border-radius:16px;
+
+box-shadow:0 20px 50px rgba(0,0,0,.35);
 
 }
 
@@ -102,6 +135,8 @@ color:red;
 </head>
 
 <body>
+
+<a href="../index.html" class="login-brand">STAR<span>TONE</span></a>
 
 <div class="login-box">
 
